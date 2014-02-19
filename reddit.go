@@ -1,4 +1,4 @@
-package redditext
+package main
 
 import (
   "bytes"

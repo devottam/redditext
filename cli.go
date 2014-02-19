@@ -1,4 +1,4 @@
-package redditext
+package main
 
 import (
   "os"
@@ -9,24 +9,11 @@ import (
 var greet string = `
 Welcome to Redditext
 --------------------
-
 `
-
 var takeInput string = "Read text from links submitted to 'subreddit': "
 
-func Start() {
-  var subreddit string
-
-  fmt.Println(greet)
-
-  if len(os.Args) > 1 {
-    subreddit = os.Args[1]
-  } else {
-    fmt.Print(takeInput)
-    fmt.Scanf("%s", &subreddit)
-  }
-
-  items, err := FetchSubReddit(subreddit)
+func Start(subreddit *string) {
+  items, err := FetchSubReddit(*subreddit)
   if err != nil {
     log.Fatal(err)
   }
@@ -66,4 +53,18 @@ func Start() {
       os.Exit(1)
     }
   }
+}
+
+func main() {
+  fmt.Println(greet)
+
+  var subreddit string
+  if len(os.Args) > 1 {
+    subreddit = os.Args[1]
+  } else {
+    fmt.Print(takeInput)
+    fmt.Scanf("%s", &subreddit)
+  }
+
+  Start(&subreddit)
 }
