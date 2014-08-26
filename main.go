@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 )
 
 var sr *string
@@ -19,10 +20,10 @@ func init() {
 func main() {
 	// If less than 5, set limit to 5.
 	if *lim < 5 {
-		lim = 5
+		*lim = 5
 	}
 
 	// Start the process.
 	fmt.Println("Starting process ...")
-	Start(sr, *lim)
+	Start()
 }
