@@ -1,49 +1,42 @@
 package main
 
 import (
+	"./network"
+	"./sources/reddit"
+	"./texter"
 	"fmt"
-	"log"
 	"os"
 )
 
-func Start(subreddit *string, lim int) {
-	items, err := FetchSubReddit(*subreddit)
+func Start() {
+	srs, err := reddit.SRItems(sr)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("System Error occurred. Panicking!!!")
+		panic(fmt.Sprintf("Err: %v", err))
 	}
 
-	externalLinks := make([]string, len(items))
-	for i, item := range items {
-		externalLinks[i] = item.URL
-	}
-
-	var read func(*string)
-	read = func(link *string) {
-		content, err := PostedLinkContent(*link)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(content)
-	}
-
-loop:
-	for i := 0; i < len(externalLinks); i++ {
-		fmt.Printf("Getting content for %s\n", externalLinks[i])
-		fmt.Print("Read article (y|n|a): ")
+	for i := range srs.Items {
 		var input string
+		fmt.Println(srs.Items[i])
+		fmt.Println("Read article (y|n|a): ")
 		fmt.Scanf("%s", &input)
 		switch input {
 		case "y":
-			read(&externalLinks[i])
+			b, err := network.ContentFromURL(&srs.Items[i].URL)
+			if err != nil {
+				panic(err)
+			}
+			s, err := texter.TextFromHTML(&b)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(*s)
 
 		case "n":
 			continue
 
-		case "a":
-			break loop
-
 		default:
-			fmt.Println("No input recorded. Aborting...")
+			fmt.Println("Aborting...")
 			os.Exit(1)
 		}
 	}
