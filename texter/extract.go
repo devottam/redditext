@@ -1,18 +1,43 @@
 package texter
 
 import (
+	"../network"
 	"bytes"
 	"code.google.com/p/go.net/html"
 	"strings"
 )
 
-const MinLengthOfText = 20
+// Document is a text holder.
+// It holds the text content of the URL.
+// TODO: It should contain different types of readable text
+// for example html text, cli text, etc.
+type Document struct {
+	URL  string
+	Body string
+	Size int
+}
 
-// TODO: This is just a dummy function now.
-// This should be replaced/converted to more generic type
-// Use `interface` to handle text extraction.
-// By rule of thumb, with given url, byte, string, etc. it should extract the url
-func TextFromHTML(b *[]byte) (*string, error) {
+// Extracts the text after fetching the URL.
+// TODO: This method should be more elaborate
+// to extract text for html, cli, etc.
+// ** NO CHECK FOR ERRS: WHY? **
+func (d *Document) ExtractText() {
+	if d.URL != "" {
+		b, _ := network.ContentFromURL(&d.URL)
+		txt, _ := textFromHTML(&b)
+		d.Body = *txt
+		d.Size = len(d.Body)
+	}
+}
+
+func NewTexter(url string) *Document {
+	d := new(Document)
+	d.URL = url
+	d.ExtractText()
+	return d
+}
+
+func textFromHTML(b *[]byte) (*string, error) {
 	buffer := new(bytes.Buffer)
 	defer buffer.Reset()
 
@@ -26,7 +51,9 @@ func TextFromHTML(b *[]byte) (*string, error) {
 	extract = func(node *html.Node) {
 		if node.Type == html.TextNode {
 			str := strings.TrimSpace(node.Data)
-			if len(str) > MinLengthOfText {
+			// FIXME: For now it is the only thing
+			// that determines if the text is for reading.
+			if len(str) > 10 {
 				buffer.WriteString(str)
 				buffer.WriteString("\n")
 			}

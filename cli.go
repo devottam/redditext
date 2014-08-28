@@ -1,7 +1,6 @@
 package main
 
 import (
-	"./network"
 	"./sources/reddit"
 	"./texter"
 	"fmt"
@@ -22,15 +21,8 @@ func Start() {
 		fmt.Scanf("%s", &input)
 		switch input {
 		case "y":
-			b, err := network.ContentFromURL(&srs.Items[i].URL)
-			if err != nil {
-				panic(err)
-			}
-			s, err := texter.TextFromHTML(&b)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println(*s)
+			t := texter.NewTexter(srs.Items[i].URL)
+			fmt.Println(t.Body)
 
 		case "n":
 			continue
