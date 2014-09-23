@@ -4,6 +4,7 @@ import (
 	"../network"
 	"bytes"
 	"code.google.com/p/go.net/html"
+	"regexp"
 	"strings"
 )
 
@@ -24,12 +25,14 @@ type Document struct {
 func (d *Document) ExtractText() {
 	if d.URL != "" {
 		b, _ := network.ContentFromURL(&d.URL)
-		txt, _ := textFromHTML(&b)
+		txt := textFromHTML(&b)
 		d.Body = *txt
 		d.Size = len(d.Body)
 	}
 }
 
+// Allocate and return new Document
+// that holds the text from the URL
 func NewTexter(url string) *Document {
 	d := new(Document)
 	d.URL = url
@@ -37,33 +40,90 @@ func NewTexter(url string) *Document {
 	return d
 }
 
-func textFromHTML(b *[]byte) (*string, error) {
+
+func textFromHTML(b *[]byte) *string {
+	var text string
+	var z *html.Tokenizer
+
+	z = html.NewTokenizer(bytes.NewReader(*b))
+	text = textUsingTokenizer(z)
+	return &text
+}
+
+// Extract text using tokenizer from lib `go.net/html`.
+// More extraction logic inside.
+// TODO: have more description here.
+func textUsingTokenizer(z *html.Tokenizer) string {
+	var txt, clTag string
+	var tags []string
+	nl := false
 	buffer := new(bytes.Buffer)
 	defer buffer.Reset()
 
-	t := buffer.String()
-	doc, err := html.Parse(bytes.NewReader(*b))
-	if err != nil {
-		return &t, err
-	}
+	for {
+		tt := z.Next()
+		tag, _ := z.TagName()
+		txt = string(z.Text())
 
-	var extract func(*html.Node)
-	extract = func(node *html.Node) {
-		if node.Type == html.TextNode {
-			str := strings.TrimSpace(node.Data)
-			// FIXME: For now it is the only thing
-			// that determines if the text is for reading.
-			if len(str) > 10 {
-				buffer.WriteString(str)
-				buffer.WriteString("\n")
+		switch tt {
+		case html.SelfClosingTagToken, html.CommentToken, html.DoctypeToken:
+			if isNewLineTag(&tag) {
+				nl = true
+			}
+			continue
+
+		case html.StartTagToken:
+			if string(tag) == "script" {
+				tt = z.Next()
+				continue
+			}
+			tags = append(tags, string(tag))
+
+		case html.EndTagToken:
+			li := len(tags) - 1
+			if li > 0 {
+				clTag = tags[li]
+				tags = tags[:li]
 			}
 		}
-		for c := node.FirstChild; c != nil; c = c.NextSibling {
-			extract(c)
+
+		if tt == html.EndTagToken && isNewLineTag(&tag) && string(tag) == clTag {
+			nl = true
+		}
+
+		if tt == html.TextToken {
+			writeStringToBuffer(buffer, &txt, &nl)
+		} else if tt == html.ErrorToken {
+			buffer.WriteString("\n\n-oo-\n\n")
+			return buffer.String()
 		}
 	}
+	return buffer.String()
+}
 
-	extract(doc)
-	t = buffer.String()
-	return &t, nil
+// Writes string from the current node/token to the buffer passed.
+// `nl` testifies if newline needs to be written too.
+// TODO: Probably would be better if I can use channels for this
+func writeStringToBuffer(b *bytes.Buffer, t *string, nl *bool) {
+	*t = strings.TrimSpace(*t)
+	matched, err := regexp.Match("[a-zA-Z0-9]+", []byte(*t))
+	if matched && err == nil {
+		if *nl {
+			b.WriteString("\n\n")
+			*nl = false
+		}
+		_, err := b.WriteString(*t)
+		if err != nil {
+			panic("text extraction failed.")
+		}
+	}
+}
+
+// Determines if the `tag` needs a newline.
+func isNewLineTag(t *[]byte) (nl bool) {
+	nl, err := regexp.Match("^(br|li|h1|div|p)$", *t)
+	if err != nil {
+		nl = false
+	}
+	return
 }
