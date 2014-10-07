@@ -40,7 +40,7 @@ func NewTexter(url string) *Document {
 	return d
 }
 
-
+// Get text from HTML `bytes` as string pointer
 func textFromHTML(b *[]byte) *string {
 	var text string
 	var z *html.Tokenizer
@@ -73,7 +73,8 @@ func textUsingTokenizer(z *html.Tokenizer) string {
 			continue
 
 		case html.StartTagToken:
-			if string(tag) == "script" {
+			m, err := regexp.Match("(style|script|header|footer)", tag)
+			if m && err == nil {
 				tt = z.Next()
 				continue
 			}
