@@ -22,7 +22,7 @@ func Start() {
 		switch input {
 		case "y":
 			t := texter.NewTexter(srs.Items[i].URL)
-			fmt.Println(t.Body)
+			fmt.Println(t)
 
 		case "n":
 			continue

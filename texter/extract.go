@@ -4,6 +4,9 @@ import (
 	"../network"
 	"bytes"
 	"code.google.com/p/go.net/html"
+	"fmt"
+	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 )
@@ -29,6 +32,13 @@ func (d *Document) ExtractText() {
 		d.Body = *txt
 		d.Size = len(d.Body)
 	}
+}
+
+func (d *Document) String() string {
+	c := exec.Command("clear")
+	c.Stdout = os.Stdout
+	c.Run()
+	return fmt.Sprintf("\x1b[1;32mArticle from: \x1b[1;34m%v\x1b[0m\n\n%v", d.URL, d.Body)
 }
 
 // Allocate and return new Document
